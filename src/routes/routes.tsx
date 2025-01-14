@@ -1,11 +1,11 @@
 import { Route, Routes } from "react-router-dom";
-import Auth from "../module/Auth/auth";
+import Auth from "../module/Auth/Auth";
 
 const Approutes = () => {
   return (
     <Routes>
       {/* <Route path="*" element={<Navigate to="/auth" />} /> */}
-      <Route path="/auth" element={<Auth />} />
+      <Route path="/login" element={<Auth />} />
     </Routes>
   );
 };
