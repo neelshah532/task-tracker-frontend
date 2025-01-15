@@ -10,13 +10,11 @@ import {
   Row,
   Col,
   Menu,
-  message,
   Avatar,
   Space,
   Dropdown,
   Skeleton,
   Empty,
-  Tooltip,
   Progress,
   Pagination,
   Modal,
@@ -41,6 +39,7 @@ import http from "../../services/http";
 import { useDispatch, useSelector } from "react-redux";
 import { Task, TaskFilters } from "../../types";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;
@@ -68,11 +67,11 @@ const Dashboard: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    dispatch(clearUser());
-    navigate("/login");
-  };
+  // const handleLogout = () => {
+  //   localStorage.removeItem("user");
+  //   dispatch(clearUser());
+  //   navigate("/login");
+  // };
 
   const filteredTasks = useMemo(() => {
     return taskData.filter((task) => {
@@ -84,7 +83,8 @@ const Dashboard: React.FC = () => {
       const matchesStatus = !filters.status || task.status === filters.status;
 
       const matchesPriority =
-        !filters.priority || task.priority === filters.priority;
+        !filters.priority.toLowerCase() ||
+        task.priority.toLowerCase() === filters.priority;
 
       return matchesSearch && matchesStatus && matchesPriority;
     });
@@ -95,30 +95,46 @@ const Dashboard: React.FC = () => {
     return filteredTasks.slice(startIndex, startIndex + pageSize);
   }, [filteredTasks, currentPage, pageSize]);
 
-  const statistics = useMemo(
-    () => ({
-      total: taskData.length,
-      completed: taskData.filter((t) => t.status === "completed").length,
-      incomplete: taskData.filter((t) => t.status === "incomplete").length,
-    }),
-    [taskData]
-  );
+  const statistics = useMemo(() => {
+    const completedTasks = taskData.filter(
+      (t) => t.status === "completed"
+    ).length;
+    const totalTasks = taskData.length;
+
+    return {
+      total: totalTasks,
+      completed: completedTasks,
+      incomplete: totalTasks - completedTasks,
+      completionRate:
+        totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
+    };
+  }, [taskData]);
+
   const handleStatusToggle = async (task: Task) => {
     setLoading(true);
-    setTimeout(() => {
-      const updatedTasks = taskData.map((t) => {
-        if (t.id === task.id) {
-          return {
-            ...t,
-            status: t.status === "completed" ? "incomplete" : "completed",
-          };
-        }
-        return t;
+    try {
+      const newStatus =
+        task.status === "completed" ? "incomplete" : "completed";
+
+      // Call the status update API
+      await http.patch(`/tasks/${task._id}/status`, {
+        status: newStatus,
       });
-      setTaskData(updatedTasks); // Update taskData without mutating it
+
+      // Update only the toggled task in the local state
+      setTaskData((prevTasks) =>
+        prevTasks.map((t) =>
+          t._id === task._id ? { ...t, status: newStatus } : t
+        )
+      );
+
+      toast.success(`Task marked as ${newStatus}`);
+    } catch (error) {
+      console.error("Failed to update task status:", error);
+      toast.error("Failed to update task status");
+    } finally {
       setLoading(false);
-      message.success("Task status updated successfully");
-    }, 500);
+    }
   };
 
   // const handlePageChange = (page: number, pageSize?: number) => {
@@ -144,16 +160,18 @@ const Dashboard: React.FC = () => {
       }
     } catch (error) {
       console.error("Failed to fetch tasks", error);
-      message.error("Failed to fetch tasks");
+      toast.error("Failed to fetch tasks");
     }
   };
 
   const handleEdit = (task: Task) => {
+    console.log("Opening edit modal for task:", task._id);
     setSelectedTask(task);
     setModalVisible(true);
   };
 
   const handleDelete = async (taskId: string) => {
+    console.log("Deleting task:", taskId);
     Modal.confirm({
       title: "Delete Task",
       content: "Are you sure you want to delete this task?",
@@ -174,10 +192,10 @@ const Dashboard: React.FC = () => {
             setCurrentPage(currentPage - 1);
           }
 
-          message.success("Task deleted successfully");
+          toast.success("Task deleted successfully");
         } catch (error) {
           console.error("Failed to delete task", error);
-          message.error("Failed to delete task");
+          toast.error("Failed to delete task");
         } finally {
           setLoading(false);
         }
@@ -185,41 +203,59 @@ const Dashboard: React.FC = () => {
     });
   };
 
-  const handleOpenModal = (task?: Task) => {
-    setSelectedTask(task || null); // If task is passed, edit, otherwise create a new task
+  const handleOpenModal = (task?: Task | null) => {
+    if (task) {
+      console.log("Opening modal for editing task:", task._id);
+      setSelectedTask(task);
+    } else {
+      console.log("Opening modal for new task");
+      setSelectedTask(null); // Ensure we clear any previous selection for new task
+    }
     setModalVisible(true);
   };
 
   const handleCancel = () => {
     setModalVisible(false);
     setSelectedTask(null); // Reset selected task on cancel
-    console.log("cancle selectedTask", selectedTask);
   };
 
   const handleSubmit = async (values: Partial<Task>) => {
     setLoading(true);
     try {
-      if (selectedTask) {
-        console.log("selectedTask", selectedTask);
-        // Update existing task
-        await http.put(`/tasks/${selectedTask._id}`, values);
-        message.success("Task updated successfully");
+      if (selectedTask?._id) {
+        // Editing existing task
+        console.log("Updating task:", selectedTask._id, values);
+        const response = await http.put(`/tasks/${selectedTask._id}`, values);
+
+        // Update only the edited task in the local state
+        setTaskData((prevTasks) =>
+          prevTasks.map((task) =>
+            task._id === selectedTask._id ? { ...task, ...response.data } : task
+          )
+        );
+
+        toast.success("Task updated successfully");
       } else {
-        // Create new task
-        await http.post("/tasks", values);
-        message.success("Task created successfully");
+        // Creating new task
+        console.log("Creating new task:", values);
+        const response = await http.post("/tasks", values);
+
+        // Add the new task to the local state
+        setTaskData((prevTasks) => [...prevTasks, response.data]);
+        toast.success("Task created successfully");
       }
-      setModalVisible(false); // Close the modal after success
-      setSelectedTask(null); // Reset selected task
+
+      handleCancel(); // Close modal and clean up
     } catch (error) {
-      message.error("Failed to save task");
+      console.error("Failed to save task:", error);
+      toast.error("Failed to save task");
     } finally {
       setLoading(false);
     }
   };
-  const completionRate = useMemo(() => {
-    return Math.round((statistics.completed / statistics.total) * 100) || 0;
-  }, [statistics]);
+  // const completionRate = useMemo(() => {
+  //   return Math.round((statistics.completed / statistics.total) * 100) || 0;
+  // }, [statistics]);
 
   const userMenu = (
     <div className="min-w-[200px] p-2">
@@ -231,7 +267,7 @@ const Dashboard: React.FC = () => {
         <Menu.Item
           key="logout"
           icon={<LogoutOutlined />}
-          onClick={handleLogout}
+          // onClick={handleLogout}
           danger
         >
           Logout
@@ -241,73 +277,78 @@ const Dashboard: React.FC = () => {
   );
 
   const TaskCard: React.FC<{ task: Task }> = ({ task }) => (
-    <div
-      className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 p-4 border-l-4 ${
-        task.priority === "high"
-          ? "border-red-500"
-          : task.priority === "medium"
-          ? "border-yellow-500"
-          : "border-green-500"
-      }`}
-    >
-      <div className="flex flex-col gap-3">
-        <div className="flex justify-between items-start">
-          <div className="flex items-center gap-2">
-            <div
-              className={`w-2 h-2 rounded-full ${
-                task.status === "completed" ? "bg-green-500" : "bg-yellow-500"
-              }`}
-            />
-            <Text className="text-sm text-gray-500">
-              {task.status === "completed" ? "Completed" : "In Progress"}
+    console.log("task", task._id),
+    (
+      <div
+        className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 p-4 border-l-4 ${
+          task.priority === "high"
+            ? "border-red-500"
+            : task.priority === "medium"
+            ? "border-yellow-500"
+            : "border-green-500"
+        }`}
+      >
+        <div className="flex flex-col gap-3">
+          <div className="flex justify-between items-start">
+            <div className="flex items-center gap-2">
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  task.status === "completed" ? "bg-green-500" : "bg-yellow-500"
+                }`}
+              />
+              <Text className="text-sm text-gray-500">
+                {task.status === "completed" ? "Completed" : "In Progress"}
+              </Text>
+            </div>
+            <Space>
+              <Button
+                type="text"
+                icon={<EditOutlined />}
+                onClick={() => handleEdit(task)}
+                className="text-gray-500 hover:text-blue-500"
+              />
+              <Button
+                type="text"
+                icon={<DeleteOutlined />}
+                onClick={() => handleDelete(task._id)}
+                className="text-gray-500 hover:text-red-500"
+              />
+            </Space>
+          </div>
+
+          <div>
+            <Title level={5} className="mb-1 line-clamp-1">
+              {task.title}
+            </Title>
+            <Text className="text-gray-600 line-clamp-2">
+              {task.description}
             </Text>
           </div>
-          <Space>
-            <Button
-              type="text"
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(task)}
-              className="text-gray-500 hover:text-blue-500"
-            />
-            <Button
-              type="text"
-              icon={<DeleteOutlined />}
-              onClick={() => handleDelete(task._id)}
-              className="text-gray-500 hover:text-red-500"
-            />
-          </Space>
-        </div>
 
-        <div>
-          <Title level={5} className="mb-1 line-clamp-1">
-            {task.title}
-          </Title>
-          <Text className="text-gray-600 line-clamp-2">{task.description}</Text>
-        </div>
-
-        <div className="flex items-center justify-between mt-2">
-          <Tag icon={<CalendarOutlined />} className="rounded-full px-3">
-            {task.dueDate}
-          </Tag>
-          <Button
-            type="link"
-            onClick={() => handleStatusToggle(task)}
-            className={
-              task.status === "completed" ? "text-green-500" : "text-gray-500"
-            }
-            icon={
-              task.status === "completed" ? (
-                <CheckCircleOutlined />
-              ) : (
-                <ClockCircleOutlined />
-              )
-            }
-          >
-            {task.status === "completed" ? "Completed" : "Mark Complete"}
-          </Button>
+          <div className="flex items-center justify-between mt-2">
+            <Tag icon={<CalendarOutlined />} className="rounded-full px-3">
+              {task.dueDate}
+            </Tag>
+            <Button
+              type="link"
+              onClick={() => handleStatusToggle(task)}
+              className={
+                task.status === "completed" ? "text-green-500" : "text-gray-500"
+              }
+              icon={
+                task.status === "completed" ? (
+                  <CheckCircleOutlined />
+                ) : (
+                  <ClockCircleOutlined />
+                )
+              }
+            >
+              {task.status === "completed" ? "Completed" : "Mark Complete"}
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+    )
   );
 
   return (
@@ -400,7 +441,7 @@ const Dashboard: React.FC = () => {
                 </div>
                 <Progress
                   type="circle"
-                  percent={completionRate}
+                  percent={statistics.completionRate}
                   size={80}
                   strokeColor="#ffffff"
                   trailColor="rgba(255,255,255,0.3)"
@@ -504,6 +545,7 @@ const Dashboard: React.FC = () => {
         onSubmit={handleSubmit}
         title={selectedTask ? "Edit Task" : "Create New Task"}
         initialValues={selectedTask || undefined}
+        task={selectedTask}
       />
     </Layout>
   );

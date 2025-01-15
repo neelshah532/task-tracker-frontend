@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Modal, Form, Input, Select, Row, Col, Divider } from "antd";
 import {
   FlagOutlined,
@@ -14,6 +14,7 @@ interface TaskModalProps {
   onSubmit: (values: Partial<Task>) => void;
   initialValues?: Task;
   title?: string;
+  task?: Task | null;
 }
 const TaskModal: React.FC<TaskModalProps> = ({
   visible,
@@ -21,9 +22,24 @@ const TaskModal: React.FC<TaskModalProps> = ({
   onSubmit,
   initialValues,
   title,
+  task,
 }) => {
   const [form] = Form.useForm();
-
+  useEffect(() => {
+    if (visible) {
+      form.resetFields();
+      if (task) {
+        // Set form values for the specific task
+        form.setFieldsValue({
+          title: task.title,
+          description: task.description,
+          priority: task.priority,
+          //  dueDate: task.dueDate ? moment(task.dueDate) : undefined,
+          // Add other fields as needed
+        });
+      }
+    }
+  }, [visible, task, form]);
   return (
     <Modal
       title={
@@ -39,6 +55,7 @@ const TaskModal: React.FC<TaskModalProps> = ({
       width={window.innerWidth > 768 ? 600 : "95%"}
       className="task-modal"
       centered
+      confirmLoading={false}
     >
       <Form
         form={form}
