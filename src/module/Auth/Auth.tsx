@@ -6,8 +6,11 @@ import { toast } from "sonner";
 import axios, { AxiosError } from "axios";
 import http from "../../services/http";
 import { FormValues } from "../../types";
+import { useDispatch } from "react-redux";
+import { setUser } from "../../store/slice/userSlice";
 
 const Auth = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
@@ -17,7 +20,7 @@ const Auth = () => {
     setLoading(true);
     try {
       if (isLogin) {
-        const response = await http.post("/login", {
+        const response = await http.post("/auth/login", {
           email: values.email,
           password: values.password,
         });
@@ -26,23 +29,35 @@ const Auth = () => {
           id: response.data.data.id,
           name: response.data.data.name,
           email: response.data.data.email,
-          token: response.data.data.jwt,
+          token: response.data.data.token,
           isVerified: response.data.data.isVerified,
         };
 
         localStorage.setItem("user", JSON.stringify(userData));
+        dispatch(setUser(userData));
         toast.success("Welcome back!");
         navigate("/");
       } else {
-        await http.post("/signup", {
+        const response = await http.post("/auth/signup", {
           name: values.fullName,
           email: values.email,
           password: values.password,
         });
 
+        const userData = {
+          id: response.data.data.id,
+          name: response.data.data.name,
+          email: response.data.data.email,
+          token: response.data.data.token,
+          isVerified: response.data.data.isVerified,
+        };
+
+        localStorage.setItem("user", JSON.stringify(userData));
+        dispatch(setUser(userData));
         toast.success("Account created successfully!");
         setIsLogin(true);
         form.resetFields();
+        navigate("/");
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
