@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Modal, Form, Input, Select, Row, Col, Divider } from "antd";
+import { Modal, Form, Input, Select } from "antd";
 import {
   FlagOutlined,
   CheckCircleOutlined,
@@ -7,6 +7,7 @@ import {
   FormOutlined,
 } from "@ant-design/icons";
 import { Task } from "../../types";
+import { MODEL } from "../../constant/constant";
 
 interface TaskModalProps {
   visible?: boolean;
@@ -16,6 +17,7 @@ interface TaskModalProps {
   title?: string;
   task?: Task | null;
 }
+
 const TaskModal: React.FC<TaskModalProps> = ({
   visible,
   onCancel,
@@ -25,27 +27,26 @@ const TaskModal: React.FC<TaskModalProps> = ({
   task,
 }) => {
   const [form] = Form.useForm();
+
   useEffect(() => {
     if (visible) {
       form.resetFields();
       if (task) {
-        // Set form values for the specific task
         form.setFieldsValue({
           title: task.title,
           description: task.description,
           priority: task.priority,
-          //  dueDate: task.dueDate ? moment(task.dueDate) : undefined,
-          // Add other fields as needed
         });
       }
     }
   }, [visible, task, form]);
+
   return (
     <Modal
       title={
-        <div className="modal-title">
-          <FormOutlined className="modal-icon" />
-          <span>{title}</span>
+        <div className="flex items-center space-x-2">
+          <FormOutlined className="text-blue-500" />
+          <span className="text-lg font-medium">{title}</span>
         </div>
       }
       open={visible}
@@ -53,100 +54,132 @@ const TaskModal: React.FC<TaskModalProps> = ({
       onOk={() => form.submit()}
       maskClosable={false}
       width={window.innerWidth > 768 ? 600 : "95%"}
-      className="task-modal"
       centered
       confirmLoading={false}
+      classNames={{
+        content: "p-6",
+        header: "pb-4 border-b border-gray-200",
+        footer: "pt-4 border-t border-gray-200",
+      }}
     >
       <Form
         form={form}
         layout="vertical"
-        initialValues={initialValues ?? { status: "Incomplete" }}
+        initialValues={initialValues ?? { status: "incomplete" }}
         onFinish={onSubmit}
-        className="task-form"
+        className="space-y-6"
       >
-        <Row gutter={[24, 16]}>
-          <Col xs={24}>
-            <Form.Item
-              name="title"
-              rules={[{ required: true, message: "Please input the title!" }]}
-            >
-              <Input
-                size="large"
-                placeholder="Task title"
-                prefix={<FileTextOutlined />}
-                className="task-input"
-              />
-            </Form.Item>
-          </Col>
+        <div className="space-y-6">
+          <Form.Item
+            name="title"
+            rules={[{ required: true, message: "Please input the title!" }]}
+            className="mb-0"
+          >
+            <Input
+              size="large"
+              placeholder={MODEL.TITLE_TASK}
+              prefix={<FileTextOutlined className="text-gray-400" />}
+              className="rounded-lg hover:border-blue-400 focus:border-blue-500 focus:shadow-sm"
+            />
+          </Form.Item>
 
-          <Col xs={24}>
-            <Form.Item
-              name="description"
-              rules={[
-                { required: true, message: "Please input the description!" },
-              ]}
-            >
-              <Input.TextArea
-                rows={4}
-                placeholder="What needs to be done?"
-                className="task-textarea"
-              />
-            </Form.Item>
-          </Col>
+          <Form.Item
+            name="description"
+            rules={[
+              { required: true, message: "Please input the description!" },
+            ]}
+            className="mb-0"
+          >
+            <Input.TextArea
+              rows={4}
+              placeholder="What needs to be done?"
+              className="rounded-lg hover:border-blue-400 focus:border-blue-500 focus:shadow-sm"
+            />
+          </Form.Item>
 
-          <Divider />
+          <div className="h-px bg-gray-200 w-full" />
 
-          <Col xs={24} sm={12}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Form.Item
               name="priority"
               rules={[
                 { required: true, message: "Please select the priority!" },
               ]}
+              className="mb-0"
             >
               <Select
                 size="large"
                 placeholder="Select priority"
-                suffixIcon={<FlagOutlined />}
-                className="task-select"
+                suffixIcon={<FlagOutlined className="text-gray-400" />}
+                className="w-full"
+                dropdownClassName="rounded-lg"
                 options={[
                   {
                     value: "High",
-                    label: "High Priority",
-                    className: "high-priority",
+                    label: (
+                      <span className="flex items-center text-red-500">
+                        <FlagOutlined className="mr-2" />
+                        High Priority
+                      </span>
+                    ),
                   },
                   {
                     value: "Medium",
-                    label: "Medium Priority",
-                    className: "medium-priority",
+                    label: (
+                      <span className="flex items-center text-yellow-500">
+                        <FlagOutlined className="mr-2" />
+                        Medium Priority
+                      </span>
+                    ),
                   },
                   {
                     value: "Low",
-                    label: "Low Priority",
-                    className: "low-priority",
+                    label: (
+                      <span className="flex items-center text-green-500">
+                        <FlagOutlined className="mr-2" />
+                        Low Priority
+                      </span>
+                    ),
                   },
                 ]}
               />
             </Form.Item>
-          </Col>
 
-          <Col xs={24} sm={12}>
             <Form.Item
               name="status"
               rules={[{ required: true, message: "Please select the status!" }]}
+              className="mb-0"
             >
               <Select
                 size="large"
                 placeholder="Select status"
-                suffixIcon={<CheckCircleOutlined />}
-                className="task-select"
+                suffixIcon={<CheckCircleOutlined className="text-gray-400" />}
+                className="w-full"
+                dropdownClassName="rounded-lg"
                 options={[
-                  { value: "Incomplete", label: "Incomplete" },
-                  { value: "Completed", label: "Completed" },
+                  {
+                    value: "incomplete",
+                    label: (
+                      <span className="flex items-center">
+                        <CheckCircleOutlined className="mr-2" />
+                        Incomplete
+                      </span>
+                    ),
+                  },
+                  {
+                    value: "completed",
+                    label: (
+                      <span className="flex items-center text-green-500">
+                        <CheckCircleOutlined className="mr-2" />
+                        Completed
+                      </span>
+                    ),
+                  },
                 ]}
               />
             </Form.Item>
-          </Col>
-        </Row>
+          </div>
+        </div>
       </Form>
     </Modal>
   );

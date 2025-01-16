@@ -27,3 +27,14 @@ export interface User {
   email: string;
   avatar?: string;
 }
+
+export interface ReduxUser {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    token: string;
+    isVerified?: boolean | string;
+    avatar?: string;
+  };
+}
