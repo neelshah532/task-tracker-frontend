@@ -307,21 +307,21 @@ const Dashboard: React.FC = () => {
       switch (priority.toLowerCase()) {
         case "high":
           return {
-            border: "#DC2626",
-            background: "#FEE2E2",
-            text: "#991B1B",
+            border: "#b71c1c",
+            background: "#ffcccb",
+            text: "#850000",
           };
         case "medium":
           return {
-            border: "#D97706",
-            background: "#FEF3C7",
-            text: "#B45309",
+            border: "#ff9800",
+            background: "#fff3e0",
+            text: "#bf360c",
           };
         case "low":
           return {
-            border: "#059669",
-            background: "#D1FAE5",
-            text: "#065F46",
+            border: "#00875a",
+            background: "#e0f7ea",
+            text: "#004d40",
           };
         default:
           return {
@@ -338,7 +338,7 @@ const Dashboard: React.FC = () => {
       <div
         style={{
           backgroundColor: "white",
-          borderRadius: "0.75rem",
+          borderRadius: "0.8rem",
           padding: "1rem",
           width: "100%",
           borderLeft: `4px solid ${priorityStyle.border}`,
@@ -400,7 +400,7 @@ const Dashboard: React.FC = () => {
             {task.priority} Priority
           </Tag>
 
-          <div className="flex items-center justify-between mt-2">
+          <div className="flex items-center justify-between mt-2  max-[340px]:flex max-[340px]:flex-col ">
             <Tag
               icon={<CalendarOutlined />}
               style={{
@@ -447,6 +447,11 @@ const Dashboard: React.FC = () => {
             collapsed={collapsed}
             className="bg-white border-r border-gray-200"
             width={260}
+            breakpoint="lg"
+            collapsedWidth={0}
+            onBreakpoint={(broken) => {
+              setCollapsed(broken);
+            }}
           >
             <div className="h-16 flex items-center justify-center border-b border-gray-200">
               <Title level={4} className="m-0 text-blue-600">
@@ -454,7 +459,11 @@ const Dashboard: React.FC = () => {
               </Title>
             </div>
 
-            <Menu mode="inline" className="border-none">
+            <Menu
+              mode="inline"
+              className="border-none"
+              defaultSelectedKeys={["dashboard"]}
+            >
               <Menu.Item key="dashboard" icon={<FlagOutlined />}>
                 {MENU.DASHBOARD}
               </Menu.Item>
@@ -471,8 +480,8 @@ const Dashboard: React.FC = () => {
           </Sider>
 
           <Layout>
-            <Header className="bg-white px-6 flex items-center justify-between border-b border-gray-200">
-              <div className="flex items-center gap-4">
+            <Header className="bg-white px-4 sm:px-6 flex items-center justify-between border-b border-gray-200 w-full">
+              <div className="flex items-center gap-2 sm:gap-4">
                 <Button
                   type="text"
                   icon={
@@ -483,29 +492,28 @@ const Dashboard: React.FC = () => {
                 <Input
                   placeholder="Search tasks..."
                   prefix={<SearchOutlined className="text-gray-400" />}
-                  className="w-64 rounded-full"
+                  className="w-full sm:w-64 rounded-full"
                   onChange={(e) =>
                     setFilters({ ...filters, search: e.target.value })
                   }
                 />
               </div>
 
-              <Space>
+              <Space className="ml-2">
                 <Button
                   type="primary"
                   icon={<PlusOutlined />}
                   onClick={() => handleOpenModal()}
-                  className="rounded-full"
+                  className="rounded-full min-w-0 sm:min-w-[120px]"
                 >
-                  {MODEL.NEWTASK}
+                  <span className="hidden sm:inline">{MODEL.NEWTASK}</span>
                 </Button>
-                {/* <Avatar src={user.avatar} icon={<UserOutlined />} /> */}
                 <Dropdown
                   overlay={userMenu}
                   trigger={["click"]}
                   placement="bottomRight"
                 >
-                  <Button type="text" className="flex items-center">
+                  <Button type="text" className="flex items-center p-1 sm:p-2">
                     <Avatar
                       size="small"
                       src={user.avatar}
@@ -517,16 +525,20 @@ const Dashboard: React.FC = () => {
               </Space>
             </Header>
 
-            <Content className="p-6 bg-gray-50">
-              <div className="mb-6">
+            <Content className="p-4 sm:p-6 bg-gray-50">
+              <div className="mb-4 sm:mb-6">
                 <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Title level={4} className="text-white m-0">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="text-center sm:text-left">
+                      <Title
+                        level={3}
+                        className="text-white m-0 "
+                        style={{ color: "white" }}
+                      >
                         {STRING.WELCOME_BACK}, {user.name}!
                       </Title>
                       <Text className="text-blue-100">
-                        {STRING.YOU_HAVE} {statistics.incomplete}
+                        {STRING.YOU_HAVE} {statistics.incomplete}{" "}
                         {STRING.PENDING_TASK}
                         {statistics.total} {STRING.TASK}
                       </Text>
@@ -534,12 +546,12 @@ const Dashboard: React.FC = () => {
                     <Progress
                       type="circle"
                       percent={statistics.completionRate}
-                      size={80}
+                      size={100}
                       strokeColor="#ffffff"
                       trailColor="rgba(255,255,255,0.3)"
                       format={(percent) => (
                         <div className="text-white">
-                          <div className="text-lg font-bold">{percent}%</div>
+                          <div className="text-xl font-bold">{percent}%</div>
                           <div className="text-xs">{STRING.COMPLETE}</div>
                         </div>
                       )}
@@ -548,41 +560,134 @@ const Dashboard: React.FC = () => {
                 </Card>
               </div>
 
-              <Row gutter={[16, 16]}>
+              <Row gutter={[16, 24]}>
                 <Col span={24}>
-                  <Card className="mb-4">
-                    <div className="flex flex-wrap gap-4 mb-4">
-                      <Select
-                        placeholder={PRIORITY_LABEL.PRIORITY}
-                        style={{ width: 200 }}
-                        onChange={(value) =>
-                          setFilters({ ...filters, priority: value })
-                        }
-                        allowClear
-                        options={[
-                          {
-                            value: "high",
-                            label: `${PRIORITY_LABEL.HIGH}`,
-                          },
-                          {
-                            value: "medium",
-                            label: `${PRIORITY_LABEL.MEDIUM}`,
-                          },
-                          { value: "low", label: `${PRIORITY_LABEL.LOW}` },
-                        ]}
-                      />
-                      <Select
-                        placeholder="Status"
-                        style={{ width: 200 }}
-                        onChange={(value) =>
-                          setFilters({ ...filters, status: value })
-                        }
-                        allowClear
-                        options={[
-                          { value: "completed", label: "Completed" },
-                          { value: "incomplete", label: "In Progress" },
-                        ]}
-                      />
+                  <Card className="mb-4 bg-gradient-to-r from-blue-50 to-blue-100">
+                    <div className="w-full md:justify-between md:items-center flex max-xl:flex-col gap-4 mb-6 ">
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <Select
+                          placeholder={PRIORITY_LABEL.PRIORITY}
+                          style={{ width: 200 }}
+                          onChange={(value) =>
+                            setFilters({ ...filters, priority: value })
+                          }
+                          allowClear
+                          options={[
+                            {
+                              value: "high",
+                              label: (
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    style={{
+                                      width: "8px",
+                                      height: "8px",
+                                      borderRadius: "50%",
+                                      backgroundColor: "#DC2626",
+                                    }}
+                                  />
+                                  {PRIORITY_LABEL.HIGH}
+                                </div>
+                              ),
+                            },
+                            {
+                              value: "medium",
+                              label: (
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    style={{
+                                      width: "8px",
+                                      height: "8px",
+                                      borderRadius: "50%",
+                                      backgroundColor: "#D97706",
+                                    }}
+                                  />
+                                  {PRIORITY_LABEL.MEDIUM}
+                                </div>
+                              ),
+                            },
+                            {
+                              value: "low",
+                              label: (
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    style={{
+                                      width: "8px",
+                                      height: "8px",
+                                      borderRadius: "50%",
+                                      backgroundColor: "#059669",
+                                    }}
+                                  />
+                                  {PRIORITY_LABEL.LOW}
+                                </div>
+                              ),
+                            },
+                          ]}
+                        />
+                        <Select
+                          placeholder="Status"
+                          style={{ width: 200 }}
+                          onChange={(value) =>
+                            setFilters({ ...filters, status: value })
+                          }
+                          allowClear
+                          options={[
+                            {
+                              value: "completed",
+                              label: (
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    style={{
+                                      width: "8px",
+                                      height: "8px",
+                                      borderRadius: "50%",
+                                      backgroundColor: "#059669",
+                                    }}
+                                  />
+                                  Completed
+                                </div>
+                              ),
+                            },
+                            {
+                              value: "incomplete",
+                              label: (
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    style={{
+                                      width: "8px",
+                                      height: "8px",
+                                      borderRadius: "50%",
+                                      backgroundColor: "#D97706",
+                                    }}
+                                  />
+                                  In Progress
+                                </div>
+                              ),
+                            },
+                          ]}
+                        />
+                      </div>
+
+                      <div className="flex md:items-center  max-md:flex-col gap-4">
+                        <Text className="text-gray-600 font-medium">
+                          Priority Legend:
+                        </Text>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-[#DC2626]" />
+                            <Text className="text-gray-600">High Priority</Text>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-[#D97706]" />
+                            <Text className="text-gray-600">
+                              Medium Priority
+                            </Text>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-[#059669]" />
+                            <Text className="text-gray-600">Low Priority</Text>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     {loading ? (
@@ -598,13 +703,7 @@ const Dashboard: React.FC = () => {
                     ) : paginatedTasks.length > 0 ? (
                       <Row gutter={[16, 16]}>
                         {paginatedTasks.map((task) => (
-                          <Col
-                            xs={24}
-                            sm={12}
-                            lg={6}
-                            key={task._id}
-                            className="flex max-md:flex-col gap-4"
-                          >
+                          <Col xs={24} sm={12} lg={6} key={task._id}>
                             <TaskCard task={task} />
                           </Col>
                         ))}
@@ -622,8 +721,9 @@ const Dashboard: React.FC = () => {
                   </Card>
                 </Col>
               </Row>
-              <div className="mt-6 flex justify-between items-center max-md:flex-col max-md:gap-4 max-md:flex-1">
-                <div className="text-gray-500">
+
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
+                <div className="text-gray-500 text-center sm:text-left">
                   Showing {paginatedTasks.length} of {filteredTasks.length}{" "}
                   tasks
                 </div>
@@ -639,6 +739,8 @@ const Dashboard: React.FC = () => {
                   showQuickJumper
                   showTotal={(total) => `Total ${total} items`}
                   pageSizeOptions={["8", "16", "24", "32"]}
+                  className="text-center"
+                  size="small"
                 />
               </div>
             </Content>

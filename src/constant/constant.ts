@@ -64,9 +64,9 @@ export const MODEL = {
 };
 
 export const STRING = {
-  WELCOME_BACK: "Welcome back,",
+  WELCOME_BACK: "Welcome back",
   YOU_HAVE: "You have",
-  PENDING_TASK: "tasks pending out of total",
+  PENDING_TASK: " tasks pending out of total ",
   TASK: "tasks",
   COMPLETE: "Completed",
   NO_TASK_FOUND: "No tasks found. Create a new task to get started!",
